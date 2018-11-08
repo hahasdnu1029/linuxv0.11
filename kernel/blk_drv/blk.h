@@ -61,6 +61,7 @@ extern struct task_struct * wait_for_request;
 #if (MAJOR_NR == 1)
 /* ram disk */
 #define DEVICE_NAME "ramdisk"
+// 宏函数DEVICE_REQUEST对应do_rd_request
 #define DEVICE_REQUEST do_rd_request
 #define DEVICE_NR(device) ((device) & 7)
 #define DEVICE_ON(device) 

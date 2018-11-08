@@ -55,6 +55,7 @@ extern long startup_time;
 /*
  * This is set up by the setup-routine at boot-time
  */
+// 0X90002指针首地址这个内存地址存储的扩展内存值（单位为KB）(unsigned short类型，*取值)
 #define EXT_MEM_K (*(unsigned short *)0x90002)
 #define DRIVE_INFO (*(struct drive_info *)0x90080)
 #define ORIG_ROOT_DEV (*(unsigned short *)0x901FC)
@@ -107,22 +108,32 @@ void main(void)		/* This really IS void, no error here. */
  * Interrupts are still disabled. Do necessary setups, then
  * enable them
  */
+	// 根据内核数据区的机器系统数据设置根设备号和硬盘信息
  	ROOT_DEV = ORIG_ROOT_DEV;
  	drive_info = DRIVE_INFO;
+	 // 根据实际的物理内存来规划内存（缓冲区、主内存、虚拟盘）
 	memory_end = (1<<20) + (EXT_MEM_K<<10);
+	// 按位与,1的位置显示本身，0的位置为0。这里保证实际的物理内存大小为1页（4K）的整数倍
 	memory_end &= 0xfffff000;
+	// 如果大于16M,按照16M。因为这个版本的linux的内存大小为16M
 	if (memory_end > 16*1024*1024)
 		memory_end = 16*1024*1024;
+	// 如果大于12M缓冲区大小设置为4M
 	if (memory_end > 12*1024*1024) 
 		buffer_memory_end = 4*1024*1024;
+	// 如果大于6M缓冲区大小设置为2M
 	else if (memory_end > 6*1024*1024)
 		buffer_memory_end = 2*1024*1024;
+	// 反之缓冲区设置为1M 
 	else
 		buffer_memory_end = 1*1024*1024;
+	// 主内存开始的位置就是就是缓冲区结束的位置
 	main_memory_start = buffer_memory_end;
+//这只虚拟盘 这个版本的linux的虚拟盘大小为2M，调用的rd_init进行虚拟盘的设置。
 #ifdef RAMDISK
 	main_memory_start += rd_init(main_memory_start, RAMDISK*1024);
 #endif
+	// 调用mem_init函数进行主内存管理结构的初始化
 	mem_init(main_memory_start,memory_end);
 	trap_init();
 	blk_dev_init();

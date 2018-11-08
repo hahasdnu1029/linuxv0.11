@@ -11,6 +11,7 @@
  * the page directory will exist. The startup code will be overwritten by
  * the page directory.
  */
+// head.s程序利用自身的代码在程序自身所在的内存空间创建了内核分页机制即在0x000000的位置创建了页目录表、页表、缓冲区、GDT、IDT并将head.s已经执行过的内存区域覆盖
 .text
 .globl _idt,_gdt,_pg_dir,_tmp_floppy_area
 _pg_dir:
@@ -20,9 +21,12 @@ startup_32:
 	mov %ax,%es
 	mov %ax,%fs
 	mov %ax,%gs
+	// 汇编中使用C的变量和函数前面加_;stack_start={&user_stack[PAGE_SIZE>>2],0x10}esp指向user_stack的末尾
 	lss _stack_start,%esp
+	//重新构建gdt和idt
 	call setup_idt
 	call setup_gdt
+    //将其他段寄存器转变为段选择子寄存器
 	movl $0x10,%eax		# reload all the segment registers
 	mov %ax,%ds		# after changing gdt. CS was already
 	mov %ax,%es		# reloaded in 'setup_gdt'
@@ -132,6 +136,7 @@ pg3:
 _tmp_floppy_area:
 	.fill 1024,1,0
 
+//为main函数执行前做的准备工作main函数的地址压栈，ret后会调到main函数去执行。
 after_page_tables:
 	pushl $0		# These are the parameters to main :-)
 	pushl $0
@@ -194,6 +199,7 @@ ignore_int:
  * some kind of marker at them (search for "16Mb"), but I
  * won't guarantee that's all :-( )
  */
+ //进行内核分页
 .align 2
 setup_paging:
 	movl $1024*5,%ecx		/* 5 pages - pg_dir+4 page tables */
@@ -215,7 +221,7 @@ setup_paging:
 	movl %cr0,%eax
 	orl $0x80000000,%eax
 	movl %eax,%cr0		/* set paging (PG) bit */
-	ret			/* this also flushes prefetch-queue */
+	ret			/* this also flushes prefetch-queue *///这里会调到main函数去执行,main函数的地址给eip
 
 .align 2
 .word 0

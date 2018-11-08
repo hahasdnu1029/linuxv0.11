@@ -54,10 +54,13 @@ long rd_init(long mem_start, int length)
 	int	i;
 	char	*cp;
 
+	// 将虚拟盘的的请求处理函数do_rd_request()与请求项控制函数结构blk_dev[7]挂接，这里是blk_dev[7]的第一项
+	// 这个挂接意味着以后内核能够通过调用do_rd_request函数处理与虚拟盘相关的请求项操作。
 	blk_dev[MAJOR_NR].request_fn = DEVICE_REQUEST;
 	rd_start = (char *) mem_start;
 	rd_length = length;
 	cp = rd_start;
+	// 设置虚拟盘的区域全为'\0'
 	for (i=0; i < length; i++)
 		*cp++ = '\0';
 	return(length);

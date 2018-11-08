@@ -29,11 +29,12 @@ struct task_struct * wait_for_request = NULL;
  *	do_request-address
  *	next-request
  */
+// 将某一设备和请求处理函数挂接
 struct blk_dev_struct blk_dev[NR_BLK_DEV] = {
 	{ NULL, NULL },		/* no_dev */
-	{ NULL, NULL },		/* dev mem */
-	{ NULL, NULL },		/* dev fd */
-	{ NULL, NULL },		/* dev hd */
+	{ NULL, NULL },		/* dev mem * 虚拟盘对应项/
+	{ NULL, NULL },		/* dev fd * 软盘对应项/
+	{ NULL, NULL },		/* dev hd * 硬盘对应项/
 	{ NULL, NULL },		/* dev ttyx */
 	{ NULL, NULL },		/* dev tty */
 	{ NULL, NULL }		/* dev lp */
