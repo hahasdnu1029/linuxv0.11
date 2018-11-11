@@ -680,10 +680,14 @@ void con_init(void)
 	bottom	= video_num_lines;
 
 	gotoxy(ORIG_X,ORIG_Y);
+	// 设置键盘中断
 	set_trap_gate(0x21,&keyboard_interrupt);
+	// 取消对键盘中断的屏蔽
 	outb_p(inb_p(0x21)&0xfd,0x21);
 	a=inb_p(0x61);
+	// 禁止键盘工作
 	outb_p(a|0x80,0x61);
+	// 允许键盘工作
 	outb(a,0x61);
 }
 /* from bsd-net-2: */

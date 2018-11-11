@@ -79,6 +79,7 @@ load_setup:
 
 ok_load_setup:
 
+// 获得具体的加载参数
 ! Get disk drive parameters, specifically nr of sectors/track
 
 	mov	dl,#0x00
@@ -107,7 +108,7 @@ ok_load_setup:
 
 	mov	ax,#SYSSEG
 	mov	es,ax		! segment of 0x010000
-	// 调用read_it函数加载系统
+	// 调用read_it函数加载操作系统核心代码从第6个扇区开始的240个扇区
 	call	read_it
 	call	kill_motor
 

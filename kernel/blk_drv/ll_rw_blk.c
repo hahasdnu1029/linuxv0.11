@@ -155,11 +155,13 @@ void ll_rw_block(int rw, struct buffer_head * bh)
 	make_request(major,rw,bh);
 }
 
+// request理想为struct request数组======》数组链表结构，struct中有指向下一个struct request的指针（单项链表）
 void blk_dev_init(void)
 {
 	int i;
 
 	for (i=0 ; i<NR_REQUEST ; i++) {
+		// -1表示空闲，没有读写请求
 		request[i].dev = -1;
 		request[i].next = NULL;
 	}

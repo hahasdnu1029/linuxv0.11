@@ -104,7 +104,9 @@ struct tty_queue * table_list[]={
 
 void tty_init(void)
 {
+	//设置串行口
 	rs_init();
+	// 设置显示器
 	con_init();
 }
 

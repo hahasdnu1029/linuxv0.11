@@ -129,6 +129,7 @@ do_move:
 
 ! then we load the segment descriptors
 
+// 将GDT和IDT的基址加载到gdtr和idtr中，这样就可以通过段寄存器（段选择子）取到对应的段的相关信息
 end_move:
 	mov	ax,#SETUPSEG	! right, forgot this at first. didn't work :-)
 	mov	ds,ax

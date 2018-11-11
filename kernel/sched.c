@@ -50,11 +50,13 @@ extern void mem_use(void);
 extern int timer_interrupt(void);
 extern int system_call(void);
 
+// 这个共用体task_union ,包括记录进程相关数据的task_struct和一个栈空间stack（1个PAGE_SIZE=4k大小。一部分存储task_struct,一部分用于做栈空间）
 union task_union {
 	struct task_struct task;
 	char stack[PAGE_SIZE];
 };
 
+// 进程0的task_union提前设计好的。
 static union task_union init_task = {INIT_TASK,};
 
 long volatile jiffies=0;
@@ -62,6 +64,8 @@ long startup_time=0;
 struct task_struct *current = &(init_task.task);
 struct task_struct *last_task_used_math = NULL;
 
+// 初始化进程槽task[NR_TASKS],NR_TASKS=64，说明次系统最多有64个进程在同时存活轮询。
+// task数组是一个指针数组，里面存着指向对应进程的task_struct的指针。
 struct task_struct * task[NR_TASKS] = {&(init_task.task), };
 
 long user_stack [ PAGE_SIZE>>2 ] ;
@@ -385,10 +389,12 @@ int sys_nice(long increment)
 void sched_init(void)
 {
 	int i;
+	// gdt表的指针，256项，p->a=TSS p->b=LDT
 	struct desc_struct * p;
 
 	if (sizeof(struct sigaction) != 16)
 		panic("Struct sigaction MUST be 16 bytes");
+	// 进行GDT和LDT以及TSS之间的挂接
 	set_tss_desc(gdt+FIRST_TSS_ENTRY,&(init_task.task.tss));
 	set_ldt_desc(gdt+FIRST_LDT_ENTRY,&(init_task.task.ldt));
 	p = gdt+2+FIRST_TSS_ENTRY;
@@ -401,12 +407,17 @@ void sched_init(void)
 	}
 /* Clear NT, so that we won't have troubles with that later on */
 	__asm__("pushfl ; andl $0xffffbfff,(%esp) ; popfl");
+	// ltr===将tss挂接到TR寄存器
+	// lldt===将ldt挂接到LDTR寄存器
+	// 此时已经指导进程0的代码区和数据区了
 	ltr(0);
 	lldt(0);
-	outb_p(0x36,0x43);		/* binary, mode 3, LSB/MSB, ch 0 */
-	outb_p(LATCH & 0xff , 0x40);	/* LSB */
+	outb_p(0x36,0x43);		/* binary, mode 3, LSB/MSB, ch 0 */ // 设置定时器
+	outb_p(LATCH & 0xff , 0x40);	/* LSB */ //每10秒1次中断
 	outb(LATCH >> 8 , 0x40);	/* MSB */
+	// 将时钟中断程序与IDT挂接
 	set_intr_gate(0x20,&timer_interrupt);
-	outb(inb_p(0x21)&~0x01,0x21);
+	outb(inb_p(0x21)&~0x01,0x21);//开启时钟中断
+	// 将系统调用中断程序与IDT挂接,中断号int80，所有的系统调用都从int80进入,然后再细分
 	set_system_gate(0x80,&system_call);
 }

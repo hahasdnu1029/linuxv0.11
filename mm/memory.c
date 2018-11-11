@@ -395,14 +395,16 @@ void do_no_page(unsigned long error_code,unsigned long address)
 	free_page(page);
 	oom();
 }
-
+// 对主内存管理结构mem_map进行设置，mem_map主要是对主内存进行管理的数据机构，记录当前有多少个进程在使用该内存
 void mem_init(long start_mem, long end_mem)
 {
 	int i;
 
 	HIGH_MEMORY = end_mem;
+	// 这里首先将左右的mem_map[i]设置为100，即引用上限100。代表不能再被进程所引用，然后再将主内存的部分清空为0。
 	for (i=0 ; i<PAGING_PAGES ; i++)
 		mem_map[i] = USED;
+		// 根据start_mem计算出起始的i
 	i = MAP_NR(start_mem);
 	end_mem -= start_mem;
 	end_mem >>= 12;

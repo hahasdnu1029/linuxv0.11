@@ -181,7 +181,7 @@ void do_reserved(long esp, long error_code)
 void trap_init(void)
 {
 	int i;
-
+	// 通过设置中断门来进行挂接，&divide_err取中断服务程序（函数）divide_err的入口地址
 	set_trap_gate(0,&divide_error);
 	set_trap_gate(1,&debug);
 	set_trap_gate(2,&nmi);

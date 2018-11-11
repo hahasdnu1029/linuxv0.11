@@ -21,7 +21,7 @@
  * read/write completion.
  */
 struct request {
-	int dev;		/* -1 if no request */
+	int dev;		/* -1 if no r equest */
 	int cmd;		/* READ or WRITE */
 	int errors;
 	unsigned long sector;

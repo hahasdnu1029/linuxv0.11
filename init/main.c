@@ -74,6 +74,7 @@ inb_p(0x71); \
 
 #define BCD_TO_BIN(val) ((val)=((val)&15) + ((val)>>4)*10)
 
+// 从主板上的一个小的CMOS中提取开机时间的信息组成开机时间startup_time记录在内核数据区
 static void time_init(void)
 {
 	struct tm time;
@@ -133,14 +134,24 @@ void main(void)		/* This really IS void, no error here. */
 #ifdef RAMDISK
 	main_memory_start += rd_init(main_memory_start, RAMDISK*1024);
 #endif
-	// 调用mem_init函数进行主内存管理结构的初始化
+	// 调用mem_init函数进行主内存管理结构的初始化,  对于本linux版本main_memory_start为6M处，main_end为16M处。
 	mem_init(main_memory_start,memory_end);
+	// 将异常处理类中断服务程序和IDT进行挂接。IDT表项0~255（256项）挂接0~47（48项）
 	trap_init();
+	// 块设备初始化，首先linux将外设分为两类：块设备和字符设备，进程要与块设备进行数据交换必须经过内存的缓冲区，初始化块设备的请求项数据结构，该结构记录了
+	// 内存缓冲块与外设逻辑块之间的读写关系：即逻辑块哪个需要读到缓冲区，需要将缓冲区的那个块写到逻辑的哪个块。
 	blk_dev_init();
 	chr_dev_init();
+	// 对字符设备进行初始化（建立人机交互，将字符设备的中断服务程序与IDT挂接）
 	tty_init();
+	// 开机时间的设置
 	time_init();
+	// sched_init主要做了3件事，如下：
+	// 1、初始化进程0
+	// 2、设置时钟中断，因为此时的linux系统是支持多任务的操作系统，所以需要设置时钟中断来支持多进程的轮询。
+	// 3、让进程须有系统调用能力（进程在运行过程中需要与内核进行交互，交互的端口就是系统调用程序，通过set_system_gate将sysetm_call系统调用函数与IDT挂接）
 	sched_init();
+	// 初始化缓冲区管理结构
 	buffer_init(buffer_memory_end);
 	hd_init();
 	floppy_init();
