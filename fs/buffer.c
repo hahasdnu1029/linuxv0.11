@@ -347,6 +347,7 @@ struct buffer_head * breada(int dev,int first, ...)
 
 void buffer_init(long buffer_end)
 {
+	// buffer_head为缓冲块管理结构，有指向缓冲块的指针。是一个双向环链表，每个链表的其实buffer_head存储在hash_table中
 	struct buffer_head * h = start_buffer;
 	void * b;
 	int i;
@@ -355,6 +356,7 @@ void buffer_init(long buffer_end)
 		b = (void *) (640*1024);
 	else
 		b = (void *) buffer_end;
+   // 在缓冲区的内存位置，从头和尾相对走向配对做缓冲块和buffer_head。直到做不出一对。
 	while ( (b -= BLOCK_SIZE) >= ((void *) (h+1)) ) {
 		h->b_dev = 0;
 		h->b_dirt = 0;

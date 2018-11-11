@@ -1,11 +1,11 @@
-#define move_to_user_mode() \
-__asm__ ("movl %%esp,%%eax\n\t" \
-	"pushl $0x17\n\t" \
-	"pushl %%eax\n\t" \
-	"pushfl\n\t" \
-	"pushl $0x0f\n\t" \
-	"pushl $1f\n\t" \
-	"iret\n" \
+#define move_to_user_mode() \ //仿中断返回动作，中断返回翻转特权级0到3
+__asm__ ("movl %%esp,%%eax\n\t" \ //将esp的值给eax，因为esp不能直接压栈。
+	"pushl $0x17\n\t" \  //ss压栈,0x17===>10111==>3特权级，LDT，进程0的数据段
+	"pushl %%eax\n\t" \   // esp压栈
+	"pushfl\n\t" \        // eflags压栈
+	"pushl $0x0f\n\t" \   // cs压栈0x0f===>01111==>3特权级，LDT，进程0的代码段
+	"pushl $1f\n\t" \     // eip压栈1f,标号1的后面。
+	"iret\n" \            // 出栈恢复现场，翻转特权级从0到3
 	"1:\tmovl $0x17,%%eax\n\t" \
 	"movw %%ax,%%ds\n\t" \
 	"movw %%ax,%%es\n\t" \

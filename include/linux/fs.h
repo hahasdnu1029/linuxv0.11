@@ -74,9 +74,9 @@ struct buffer_head {
 	unsigned char b_count;		/* users using this block */
 	unsigned char b_lock;		/* 0 - ok, 1 -locked */
 	struct task_struct * b_wait;
-	struct buffer_head * b_prev;
+	struct buffer_head * b_prev; 
 	struct buffer_head * b_next;
-	struct buffer_head * b_prev_free;
+	struct buffer_head * b_prev_free; 
 	struct buffer_head * b_next_free;
 };
 

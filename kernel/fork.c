@@ -36,6 +36,10 @@ void verify_area(void * addr,int size)
 	}
 }
 
+/**
+ * 
+ * 设置子进程的代码段、数据段基址=n*64M(4G/64得到的，每个进程有64M的线性空间)
+ */
 int copy_mem(int nr,struct task_struct * p)
 {
 	unsigned long old_data_base,new_data_base,data_limit;
@@ -53,6 +57,7 @@ int copy_mem(int nr,struct task_struct * p)
 	p->start_code = new_code_base;
 	set_base(p->ldt[1],new_code_base);
 	set_base(p->ldt[2],new_data_base);
+	// 创建子进程1的第一个页表，复制进程0的页表，设置进程1的页目录表
 	if (copy_page_tables(old_data_base,new_data_base,data_limit)) {
 		free_page_tables(new_data_base,data_limit);
 		return -ENOMEM;
@@ -64,6 +69,11 @@ int copy_mem(int nr,struct task_struct * p)
  *  Ok, this is the main fork-routine. It copies the system process
  * information (task[nr]) and sets up the necessary registers. It
  * also copies the data segment in it's entirety.
+ *   进行进程0到进程1的拷贝（task_struct、task[64]、页表）
+ * 	 long eip,long cs,long eflags,long esp,long ss  int0x80硬件压栈的
+ *   long ebx,long ecx,long edx，ong fs,long es,long ds, system_call 压栈的
+ * 	 long none call sys_call_table压栈的
+ * 	 long ebp,long edi,long esi,long gs，int nr  sys_fork压栈的，nr就是eax，call find_empty_process返回值2
  */
 int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 		long ebx,long ecx,long edx,
@@ -74,10 +84,16 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 	int i;
 	struct file *f;
 
+	// 在16M内存的最高端获取一页（4K），强制转换为task_struct类型
+	// get_free_page是获得一个空闲页，C和C++的malloc和new都是走的这个函数，获得的是堆空间
 	p = (struct task_struct *) get_free_page();
 	if (!p)
 		return -EAGAIN;
+	// 将task数组的指针指向这块内存
 	task[nr] = p;
+	// 将进程0的task_struct赋值给进程1的task_struct，完成基本的拷贝，然后再对进程1的task_struct做个性化设置
+	// 只赋值了task_struc，并没有赋值内核栈。
+	// 对于tss的设置都是前面压栈时的值（3特权级）
 	*p = *current;	/* NOTE! this doesn't copy the supervisor stack */
 	p->state = TASK_UNINTERRUPTIBLE;
 	p->pid = last_pid;
@@ -91,10 +107,10 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 	p->start_time = jiffies;
 	p->tss.back_link = 0;
 	p->tss.esp0 = PAGE_SIZE + (long) p;
-	p->tss.ss0 = 0x10;
-	p->tss.eip = eip;
+	p->tss.ss0 = 0x10; //0x10===>10000,0特权级，GDT，内核代码段
+	p->tss.eip = eip;  //in0x80中断的下一行代码
 	p->tss.eflags = eflags;
-	p->tss.eax = 0;
+	p->tss.eax = 0; // 返回值
 	p->tss.ecx = ecx;
 	p->tss.edx = edx;
 	p->tss.ebx = ebx;
@@ -108,6 +124,7 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 	p->tss.ds = ds & 0xffff;
 	p->tss.fs = fs & 0xffff;
 	p->tss.gs = gs & 0xffff;
+	// 设置新的
 	p->tss.ldt = _LDT(nr);
 	p->tss.trace_bitmap = 0x80000000;
 	if (last_task_used_math == current)
@@ -126,9 +143,12 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 		current->root->i_count++;
 	if (current->executable)
 		current->executable->i_count++;
+	// 将进程1的tss和ldt挂接到GDT上
 	set_tss_desc(gdt+(nr<<1)+FIRST_TSS_ENTRY,&(p->tss));
 	set_ldt_desc(gdt+(nr<<1)+FIRST_LDT_ENTRY,&(p->ldt));
+	// 设置当前进程的状态为可执行状态
 	p->state = TASK_RUNNING;	/* do this last, just in case */
+	返回last_pid=1
 	return last_pid;
 }
 

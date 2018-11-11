@@ -68,6 +68,7 @@ extern void hd_interrupt(void);
 extern void rd_load(void);
 
 /* This may be used only once, enforced by 'static int callable' */
+// 进行硬盘的管理
 int sys_setup(void * BIOS)
 {
 	static int callable = 1;
@@ -342,6 +343,7 @@ void do_hd_request(void)
 
 void hd_init(void)
 {
+	// 将硬盘请求项处理函数与blk_dev控制结构挂接，并将硬盘中断程序与IDT挂接
 	blk_dev[MAJOR_NR].request_fn = DEVICE_REQUEST;
 	set_intr_gate(0x2E,&hd_interrupt);
 	outb_p(inb_p(0x21)&0xfb,0x21);

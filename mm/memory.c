@@ -59,6 +59,7 @@ static unsigned char mem_map [ PAGING_PAGES ] = {0,};
 /*
  * Get physical address of first (actually last :-) free page, and mark it
  * used. If no free pages left, return 0.
+ * 倒着找mem_map的空闲页，返回一个指针为页的首地址，改地址为线性地址===物理地址，因为处于内核态，线性地址等于物理地址
  */
 unsigned long get_free_page(void)
 {

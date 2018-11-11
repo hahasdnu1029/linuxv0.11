@@ -153,9 +153,13 @@ void main(void)		/* This really IS void, no error here. */
 	sched_init();
 	// 初始化缓冲区管理结构
 	buffer_init(buffer_memory_end);
+	// 初始化硬盘
 	hd_init();
+	// 初始化软盘
 	floppy_init();
+	// 现在新的IA32的中断服务体系已经建立完全，开中断。即操作系统现在可以相应中断请求了。EFLAGAS的IF=1
 	sti();
+	// 进程从0特权翻转为3特权
 	move_to_user_mode();
 	if (!fork()) {		/* we count on this going ok */
 		init();
