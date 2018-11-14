@@ -30,6 +30,7 @@
 
 void buffer_init(long buffer_end);
 
+// 宏函数，对设备号右移8位
 #define MAJOR(a) (((unsigned)(a))>>8)
 #define MINOR(a) ((a)&0xff)
 

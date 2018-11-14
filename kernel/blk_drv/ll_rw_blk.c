@@ -30,7 +30,7 @@ struct task_struct * wait_for_request = NULL;
  *	next-request
  */
 // 将某一设备和请求处理函数挂接
-struct blk_dev_struct blk_dev[NR_BLK_DEV] = {
+struct blk_dev_struct blk_dev[NaR_BLK_DEV] = {
 	{ NULL, NULL },		/* no_dev */
 	{ NULL, NULL },		/* dev mem * 虚拟盘对应项/
 	{ NULL, NULL },		/* dev fd * 软盘对应项/
@@ -85,7 +85,7 @@ static void add_request(struct blk_dev_struct * dev, struct request * req)
 	tmp->next=req;
 	sti();
 }
-
+// 1：做请求项数据 2：添加到队列（数组链）
 static void make_request(int major,int rw, struct buffer_head * bh)
 {
 	struct request * req;
@@ -143,10 +143,11 @@ repeat:
 	add_request(major+blk_dev,req);
 }
 
+// 找到驱动，进行缓冲块的读写
 void ll_rw_block(int rw, struct buffer_head * bh)
 {
 	unsigned int major;
-
+	// MAJOR返回3
 	if ((major=MAJOR(bh->b_dev)) >= NR_BLK_DEV ||
 	!(blk_dev[major].request_fn)) {
 		printk("Trying to read nonexistent block-device\n\r");

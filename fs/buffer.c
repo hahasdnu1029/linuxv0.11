@@ -37,7 +37,7 @@ static inline void wait_on_buffer(struct buffer_head * bh)
 {
 	cli();
 	while (bh->b_lock)
-		sleep_on(&bh->b_wait);
+		sleep_on(&bh->b_wait);// 底层去调度了，schedule()。
 	sti();
 }
 
@@ -185,6 +185,7 @@ struct buffer_head * get_hash_table(int dev, int block)
 	struct buffer_head * bh;
 
 	for (;;) {
+		// 查找dev和block匹配的。
 		if (!(bh=find_buffer(dev,block)))
 			return NULL;
 		bh->b_count++;
@@ -207,6 +208,7 @@ struct buffer_head * getblk(int dev,int block)
 {
 	struct buffer_head * tmp, * bh;
 
+// 查找hash_table。
 repeat:
 	if (bh = get_hash_table(dev,block))
 		return bh;
@@ -214,12 +216,14 @@ repeat:
 	do {
 		if (tmp->b_count)
 			continue;
+		// 找到的这个block缓冲块有很多情况，找一个最合适的block缓冲块
+		// lock=dirt=0同步结束lock=1 dirt=0正在同步dirt=1 lock=0还没有同步三个等级
 		if (!bh || BADNESS(tmp)<BADNESS(bh)) {
 			bh = tmp;
 			if (!BADNESS(tmp))
 				break;
 		}
-/* and repeat until we find something good */
+/* and repeat until we find something good  */
 	} while ((tmp = tmp->b_next_free) != free_list);
 	if (!bh) {
 		sleep_on(&buffer_wait);
@@ -268,11 +272,12 @@ struct buffer_head * bread(int dev,int block)
 {
 	struct buffer_head * bh;
 
+	// 获取一个缓冲块，这个一定会返回一个缓冲块。分三种情况：1有现成的返回现成的，2有空闲的 3等待
 	if (!(bh=getblk(dev,block)))
 		panic("bread: getblk returned NULL\n");
 	if (bh->b_uptodate)
 		return bh;
-	ll_rw_block(READ,bh);
+	ll_rw_block(READ,bh);//通到驱动，读盘。
 	wait_on_buffer(bh);
 	if (bh->b_uptodate)
 		return bh;

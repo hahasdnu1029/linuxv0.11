@@ -68,7 +68,7 @@ extern void hd_interrupt(void);
 extern void rd_load(void);
 
 /* This may be used only once, enforced by 'static int callable' */
-// 进行硬盘的管理
+// 进行硬盘文件系统参数的设置
 int sys_setup(void * BIOS)
 {
 	static int callable = 1;
@@ -81,6 +81,7 @@ int sys_setup(void * BIOS)
 		return -1;
 	callable = 0;
 #ifndef HD_TYPE
+	// 两块硬盘，进行两块硬盘参数的设置（drive_info到hd_info）
 	for (drive=0 ; drive<2 ; drive++) {
 		hd_info[drive].cyl = *(unsigned short *) BIOS;
 		hd_info[drive].head = *(unsigned char *) (2+BIOS);
@@ -90,11 +91,13 @@ int sys_setup(void * BIOS)
 		hd_info[drive].sect = *(unsigned char *) (14+BIOS);
 		BIOS += 16;
 	}
+	// 判断任意硬盘参数来确定硬盘的数目
 	if (hd_info[1].cyl)
 		NR_HD=2;
 	else
 		NR_HD=1;
 #endif
+	// 这里来进行分区信息的设置，一块物理硬盘，对多有4个逻辑分区，0是物理盘，1到4是逻辑盘。
 	for (i=0 ; i<NR_HD ; i++) {
 		hd[i*5].start_sect = 0;
 		hd[i*5].nr_sects = hd_info[i].head*
@@ -134,7 +137,10 @@ int sys_setup(void * BIOS)
 		hd[i*5].start_sect = 0;
 		hd[i*5].nr_sects = 0;
 	}
+	// 总的思想：1、得到一个缓冲块 2、如果没更新，我进行更新。
 	for (drive=0 ; drive<NR_HD ; drive++) {
+		// 将硬盘的引导块读入到缓冲块中bread函数，传入的设备号和块号0（硬盘的0号逻辑块为引导块，占2个扇区）
+		// 每个物理硬盘最多有4个逻辑盘，0号为物理盘，1-4位逻辑盘。
 		if (!(bh = bread(0x300 + drive*5,0))) {
 			printk("Unable to read partition table of drive %d\n\r",
 				drive);
@@ -292,6 +298,7 @@ static void recal_intr(void)
 	do_hd_request();
 }
 
+// 硬盘请求处理函数
 void do_hd_request(void)
 {
 	int i,r;

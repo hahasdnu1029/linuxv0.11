@@ -20,16 +20,17 @@
  * paging, 'bh' is NULL, and 'waiting' is used to wait for
  * read/write completion.
  */
+// 请求项结构（数组链）
 struct request {
-	int dev;		/* -1 if no r equest */
+	int dev;		/* -1 if no r equest */ 
 	int cmd;		/* READ or WRITE */
 	int errors;
-	unsigned long sector;
-	unsigned long nr_sectors;
+	unsigned long sector; //起始扇区
+	unsigned long nr_sectors; // 扇区数
 	char * buffer;
 	struct task_struct * waiting;
-	struct buffer_head * bh;
-	struct request * next;
+	struct buffer_head * bh; // 缓冲块
+	struct request * next; // 下一个请求项
 };
 
 /*
@@ -43,7 +44,9 @@ struct request {
 (s1)->sector < (s2)->sector)))
 
 struct blk_dev_struct {
+	// 函数指针（钩子），这个请求项的处理函数
 	void (*request_fn)(void);
+	// 请求项
 	struct request * current_request;
 };
 
